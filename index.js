@@ -1,20 +1,50 @@
+const { MongoClient, Db } = require("mongodb");
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
-const PORT = 4000;
+ 
+const MONGO_URI = 'mongodb+srv://arpittyagirocks:arpitmongo@cluster0.1accyoc.mongodb.net/?retryWrites=true&w=majority';
+const DB_NAME = 'urlShortner';
 
+let db;
+const PORT = 4000;
 app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
-    console.log(random());
-    if (req.body.url) {
-        const { url } = req.body;
-        res.json({ "message": "hello", url })
+MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
+ .then((client) => {
+   console.log("Connected to MongoDB Atlas");
+   db = client.db(DB_NAME);
+ })
+ .catch((err) => {
+   console.error(err);
+ });
+
+ 
+app.post('/', (req, res) => {
+    const shortUrl = random();
+    const { url } = req.body;
+    if (url) {
+        db.collection('urlmap').insertOne({ url, shortUrl });
+        res.json({ "message": "URL shortened successfully", shortUrl });
     }
     else {
         res.status(400).json({ "message": "URL not found" })
     }
 })
+
+app.get('/:id',async (req, res) => {
+    const { id } = req.params;
+    
+    const all = db.collection('urlmap');
+    const data = await all.findOne({ shortUrl:"5d4ugv8" });
+
+    if(!data){
+        return res.json({"message":"Not found"});
+    } 
+  
+    res.redirect(data.url);
+  }
+);
 
 function random() {
     AllCharactors = "abcdefghijklmnopqrstuvwxyz0123456789";
